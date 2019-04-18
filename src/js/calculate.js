@@ -90,8 +90,15 @@ export default {
                  * Note: getting the parents of $control wouldn't work for nodes inside #calculated-items!
                  */
                 const parentPath = pathParts.splice( 0, pathParts.length - 1 ).join( '/' );
-                const $parentGroups = that.form.view.$.find( `.or-group[name="${parentPath}"],.or-group-data[name="${parentPath}"]` ).eq( index )
-                    .parents( '.or-group, .or-group-data' ).addBack();
+                let $parentGroups;
+
+                if ( index > 0 && that.form.view.html.querySelector( `.or-repeat[name="${parentPath}"]` ) ) {
+                    $parentGroups = that.form.view.$.find( `.or-repeat[name="${parentPath}"]` ).eq( index )
+                        .parents( '.or-group, .or-group-data' ).addBack();
+                } else {
+                    $parentGroups = that.form.view.$.find( `.or-group[name="${parentPath}"],.or-group-data[name="${parentPath}"]` ).eq( index )
+                        .parents( '.or-group, .or-group-data' ).addBack();
+                }
 
                 if ( $parentGroups.length ) {
                     // Start at the highest level, and traverse down to the DOM to the immediate parent group.
@@ -109,22 +116,22 @@ export default {
                         context: name,
                         index,
                         expr: relevantExpr
-                    } ] ).every( item => ( item.expr ) ? that.form.model.evaluate( item.expr, 'boolean', item.context, item.index ) : true );
+                    } ] ).every( item => item.expr ? that.form.model.evaluate( item.expr, 'boolean', item.context, item.index ) : true );
                 } else {
-                    relevant = ( relevantExpr ) ? that.form.model.evaluate( relevantExpr, 'boolean', name, index ) : true;
+                    relevant = relevantExpr ? that.form.model.evaluate( relevantExpr, 'boolean', name, index ) : true;
                 }
 
-                // not sure if using 'string' is always correct
+                // Not sure if using 'string' is always correct
                 const newExpr = that.form.replaceChoiceNameFn( expr, 'string', name, index );
 
-                // it is possible that the fixed expr is '' which causes an error in XPath
+                // It is possible that the fixed expr is '' which causes an error in XPath
                 const xpathType = that.form.input.getInputType( $control ) === 'number' ? 'number' : 'string';
-                const result = ( relevant && newExpr ) ? that.form.model.evaluate( newExpr, xpathType, name, index ) : '';
+                const result = relevant && newExpr ? that.form.model.evaluate( newExpr, xpathType, name, index ) : '';
 
-                // filter the result set to only include the target node
+                // Filter the result set to only include the target node
                 dataNodesObj.setIndex( index );
 
-                // set the value
+                // Set the value
                 dataNodesObj.setVal( result, dataType );
 
                 // Not the most efficient to use input.setVal here as it will do another lookup
