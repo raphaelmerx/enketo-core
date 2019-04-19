@@ -7,6 +7,7 @@
 import $ from 'jquery';
 
 import config from 'enketo/config';
+import { getAncestors } from './dom-utils';
 
 export default {
 
@@ -90,19 +91,19 @@ export default {
                  * Note: getting the parents of $control wouldn't work for nodes inside #calculated-items!
                  */
                 const parentPath = pathParts.splice( 0, pathParts.length - 1 ).join( '/' );
-                let $parentGroups;
+                let startElement;
 
-                if ( index > 0 && that.form.view.html.querySelector( `.or-repeat[name="${parentPath}"]` ) ) {
-                    $parentGroups = that.form.view.$.find( `.or-repeat[name="${parentPath}"]` ).eq( index )
-                        .parents( '.or-group, .or-group-data' ).addBack();
+                if ( index === 0 ) {
+                    startElement = that.form.view.html.querySelector( `.or-group[name="${parentPath}"],.or-group-data[name="${parentPath}"]` );
                 } else {
-                    $parentGroups = that.form.view.$.find( `.or-group[name="${parentPath}"],.or-group-data[name="${parentPath}"]` ).eq( index )
-                        .parents( '.or-group, .or-group-data' ).addBack();
+                    startElement = that.form.view.html.querySelectorAll( `.or-repeat[name="${parentPath}"]` )[ index ] ||
+                        that.form.view.html.querySelectorAll( `.or-group[name="${parentPath}"],.or-group-data[name="${parentPath}"]` )[ index ];
                 }
+                const ancestorGroups = startElement ? [ startElement ].concat( getAncestors( startElement, '.or-group, .or-group-data' ) ) : [];
 
-                if ( $parentGroups.length ) {
-                    // Start at the highest level, and traverse down to the DOM to the immediate parent group.
-                    var relevant = $parentGroups.filter( '[data-relevant]' ).reverse().get().map( group => {
+                if ( ancestorGroups.length ) {
+                    // Start at the highest level, and traverse down to the immediate parent group.
+                    var relevant = ancestorGroups.filter( el => el.matches( '[data-relevant]' ) ).map( group => {
                         const $group = $( group );
                         const nm = that.form.input.getName( $group );
 
