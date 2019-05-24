@@ -139,10 +139,10 @@ export default {
     },
     setVal( $input, value, event = events.InputUpdate() ) {
         let inputs;
-        const input = $input[ 0 ];
-        const type = this.getInputType( input );
-        const question = this.getWrapNode( input );
-        const name = this.getName( input );
+        const control = $input[ 0 ];
+        const type = this.getInputType( control );
+        const question = this.getWrapNode( control );
+        const name = this.getName( control );
 
         if ( type === 'radio' ) {
             // data-name is always present on radiobuttons
@@ -154,7 +154,7 @@ export default {
             if ( type === 'file' ) {
                 // value of file input can be reset to empty but not to a non-empty value
                 if ( value ) {
-                    input.setAttribute( 'data-loaded-file-name', value );
+                    control.setAttribute( 'data-loaded-file-name', value );
                     // console.error('Cannot set value of file input field (value: '+value+'). If trying to load '+
                     //  'this record for editing this file input field will remain unchanged.');
                     return false;
@@ -189,7 +189,7 @@ export default {
             }
         }
 
-        if ( this.isMultiple( input ) === true ) {
+        if ( this.isMultiple( control ) === true ) {
             // TODO: It's weird that setVal does not take an array value but getVal returns an array value for multiple selects!
             value = value.split( ' ' );
         } else if ( type === 'radio' ) {
@@ -201,7 +201,38 @@ export default {
         if ( inputs.length ) {
             const curVal = this.getVal( $input );
             if ( curVal === undefined || curVal.toString() !== value.toString() ) {
-                $( inputs ).val( value );
+                switch ( type ) {
+                    case 'radio': {
+                        const input = this.getWrapNode( control ).querySelector( `input[type="radio"][data-name="${name}"][value="${value}"]` );
+                        if ( input ) {
+                            input.checked = true;
+                        }
+                        break;
+                    }
+                    case 'checkbox': {
+                        this.getWrapNode( control ).querySelectorAll( `input[type="checkbox"][name="${name}"]` )
+                            .forEach( input => input.checked = value.includes( input.value ) );
+                        break;
+                    }
+                    case 'select': {
+                        if ( this.isMultiple( control ) ) {
+                            control.querySelectorAll( 'option' ).forEach( option => option.selected = value.includes( option.value ) );
+                        } else {
+                            const option = control.querySelector( `option[value="${value}"]` );
+                            if ( option ) {
+                                option.selected = true;
+                            } else {
+                                control.querySelectorAll( 'option' ).forEach( option => option.selected = false );
+                            }
+                        }
+                        break;
+                    }
+                    default: {
+                        control.value = value;
+                    }
+                }
+
+
                 // don't trigger on all radiobuttons/checkboxes
                 if ( event ) {
                     inputs[ 0 ].dispatchEvent( event );
