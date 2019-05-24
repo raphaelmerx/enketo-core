@@ -201,7 +201,7 @@ export default {
                 if ( $input.hasClass( 'rank' ) ) {
                     currentValue = '';
                 }
-                that.form.input.setVal( $input, currentValue );
+                that.form.input.setVal( $input[ 0 ], currentValue );
                 $input.trigger( 'change' );
             }
 

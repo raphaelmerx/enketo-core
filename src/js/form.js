@@ -357,7 +357,7 @@ Form.prototype.setAllVals = function( $group, groupIndex ) {
                 const index = that.model.node( name ).getElements().indexOf( element );
                 const control = that.input.find( name, index );
                 if ( control ) {
-                    that.input.setVal( $( control ), value );
+                    that.input.setVal( control, value );
                 }
             } catch ( e ) {
                 console.error( e );
@@ -628,7 +628,7 @@ Form.prototype.setEventHandlers = function() {
                 path: that.input.getName( input ),
                 inputType: that.input.getInputType( input ),
                 xmlType: that.input.getXmlType( input ),
-                val: that.input.getVal( $input ),
+                val: that.input.getVal( input ),
                 index: that.input.getIndex( input )
             };
 
@@ -854,7 +854,7 @@ Form.prototype.validateInput = function( $input ) {
         calculation: this.input.getCalculation( input ),
         required: this.input.getRequired( input ),
         readonly: this.input.getReadonly( input ),
-        val: this.input.getVal( $input )
+        val: this.input.getVal( input )
     };
     // No need to validate, **nor send validation events**. Meant for simple empty "notes" only.
     if ( n.readonly && !n.val && !n.required && !n.constraint && !n.calculation ) {

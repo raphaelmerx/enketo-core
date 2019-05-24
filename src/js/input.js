@@ -5,7 +5,6 @@
 import types from './types';
 import events from './event';
 import { closestAncestorUntil } from './dom-utils';
-import $ from 'jquery';
 
 export default {
     getWrapNode( control ) {
@@ -32,7 +31,7 @@ export default {
             calculation: this.getCalculation( control ),
             relevant: this.getRelevant( control ),
             readonly: this.getReadonly( control ),
-            val: this.getVal( $( control ) ),
+            val: this.getVal( control ),
             required: this.getRequired( control ),
             enabled: this.isEnabled( control ),
             multiple: this.isMultiple( control )
@@ -96,8 +95,7 @@ export default {
     isEnabled( control ) {
         return !( control.disabled || closestAncestorUntil( control, '.disabled', '.or' ) );
     },
-    getVal( $control ) {
-        const control = $control[ 0 ];
+    getVal( control ) {
         let value = '';
         const inputType = this.getInputType( control );
         const name = this.getName( control );
@@ -137,9 +135,8 @@ export default {
 
         return question ? question.querySelector( `[${attr}="${name}"]:not(.ignore)` ) : null;
     },
-    setVal( $input, value, event = events.InputUpdate() ) {
+    setVal( control, value, event = events.InputUpdate() ) {
         let inputs;
-        const control = $input[ 0 ];
         const type = this.getInputType( control );
         const question = this.getWrapNode( control );
         const name = this.getName( control );
@@ -199,7 +196,7 @@ export default {
         // Trigger an 'inputupdate' event which can be used in widgets to update the widget when the value of its 
         // original input element has changed **programmatically**.
         if ( inputs.length ) {
-            const curVal = this.getVal( $input );
+            const curVal = this.getVal( control );
             if ( curVal === undefined || curVal.toString() !== value.toString() ) {
                 switch ( type ) {
                     case 'radio': {
