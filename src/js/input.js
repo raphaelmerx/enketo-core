@@ -87,11 +87,6 @@ export default {
         }
         return name;
     },
-    /**
-     * Used to retrieve the index of a question amidst all questions with the same name.
-     * The index that can be used to find the corresponding node in the model.
-     * NOTE: this function should be used sparingly, as it is CPU intensive!
-     */
     getIndex( control ) {
         return this.form.repeats.getIndex( control.closest( '.or-repeat' ) );
     },
@@ -101,28 +96,37 @@ export default {
     isEnabled( control ) {
         return !( control.disabled || closestAncestorUntil( control, '.disabled', '.or' ) );
     },
-    getVal( $input ) {
-        const input = $input[ 0 ];
-        let inputType;
-        const values = [];
-        let name;
+    getVal( $control ) {
+        const control = $control[ 0 ];
+        let value = '';
+        const inputType = this.getInputType( control );
+        const name = this.getName( control );
 
-        if ( $input.length !== 1 ) {
-            return console.error( 'getVal(): no inputNode provided or multiple' );
+        switch ( inputType ) {
+            case 'radio': {
+                const checked = this.getWrapNode( control ).querySelector( `input[type="radio"][data-name="${name}"]:checked` );
+                value = checked ? checked.value : '';
+                break;
+            }
+            case 'checkbox': {
+                value = [ ...this.getWrapNode( control ).querySelectorAll( `input[type="checkbox"][name="${name}"]:checked` ) ].map( input => input.value );
+                break;
+            }
+            case 'select': {
+                if ( this.isMultiple( control ) ) {
+                    value = [ ...control.querySelectorAll( 'option:checked' ) ].map( option => option.value );
+                } else {
+                    const selected = control.querySelector( 'option:checked' );
+                    value = selected ? selected.value : '';
+                }
+                break;
+            }
+            default: {
+                value = control.value;
+            }
         }
-        inputType = this.getInputType( input );
-        name = this.getName( input );
 
-        if ( inputType === 'radio' ) {
-            const checked = this.getWrapNode( input ).querySelector( `input[type="radio"][data-name="${name}"]:checked` );
-            return checked ? checked.value : '';
-        }
-
-        if ( inputType === 'checkbox' ) {
-            this.getWrapNode( input ).querySelectorAll( `input[type="checkbox"][name="${name}"]:checked` ).forEach( input => values.push( input.value ) );
-            return values;
-        }
-        return $input.val() || '';
+        return value || '';
     },
     find( name, index ) {
         let attr = 'name';
