@@ -796,7 +796,7 @@ describe( 'validation', () => {
             // now set value to empty
             numberInput.value = '';
             numberInput.dispatchEvent( events.Change() );
-            form.validateInput( $( numberInput ) )
+            form.validateInput( numberInput )
                 .then( () => {
                     expect( numberLabel.classList.contains( 'invalid-required' ) ).toBe( true );
                     done();
@@ -808,12 +808,12 @@ describe( 'validation', () => {
             form.init();
             const $textarea = form.view.$.find( '[name="/thedata/nodeF"]' );
             $textarea.val( '\n' ).trigger( 'change' );
-            form.validateInput( $textarea )
+            form.validateInput( $textarea[ 0 ] )
                 .then( () => {
                     expect( $textarea.length ).toEqual( 1 );
                     expect( $textarea.parent( 'label' ).hasClass( 'invalid-required' ) ).toBe( true );
                     $textarea.val( '  \n  \n\r \t ' ).trigger( 'change' );
-                    return form.validateInput( $textarea );
+                    return form.validateInput( $textarea[ 0 ] );
                 } )
                 .then( () => {
                     expect( $textarea.parent( 'label' ).hasClass( 'invalid-required' ) ).toBe( true );
@@ -827,7 +827,7 @@ describe( 'validation', () => {
             const $dynReq = form.view.$.find( '.required' );
 
             expect( $dynReq.eq( 0 ).hasClass( 'hide' ) ).toBe( false );
-            form.validateInput( form.view.$.find( '[name="/dynamic-required/num"]' ) ).then( () => {
+            form.validateInput( form.view.html.querySelector( '[name="/dynamic-required/num"]' ) ).then( () => {
                 expect( $dynReq.eq( 1 ).hasClass( 'hide' ) ).toBe( true );
                 done();
             } );
@@ -1033,7 +1033,7 @@ describe( 're-validating inputs and updating user feedback', () => {
             // input.validate is called by a comment widget on the linked question when the comment value changes
             // set question in valid state (not automatic, but by calling input.validate)
             $oneComment.val( 'comment' ).trigger( 'change' );
-            form.input.validate( $one ).then( () => {
+            form.input.validate( $one[0] ).then( () => {
                 expect( $one.closest( '.question' ).hasClass( 'invalid-required' ) ).toBe( false );
                 done();
             } );

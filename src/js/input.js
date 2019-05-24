@@ -239,7 +239,7 @@ export default {
 
         return inputs[ 0 ];
     },
-    validate( $input ) {
-        return this.form.validateInput( $input );
+    validate( control ) {
+        return this.form.validateInput( control );
     }
 };

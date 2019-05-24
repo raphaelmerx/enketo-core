@@ -146,7 +146,7 @@ export default {
                  * in the evaluation cascade only updates questions with a _dependency_ on this question.
                  */
                 if ( config.validateContinuously === true ) {
-                    that.form.validateInput( $control );
+                    that.form.validateInput( control );
                 }
             }
         } );

@@ -596,7 +596,7 @@ Form.prototype.validationUpdate = function( updated ) {
             .add( this.getRelatedNodes( 'data-required', '', upd ) );
 
         $nodes.each( function() {
-            that.validateInput( $( this ) );
+            that.validateInput( this );
         } );
     }
 };
@@ -645,7 +645,7 @@ Form.prototype.setEventHandlers = function() {
             const updated = that.model.node( n.path, n.index ).setVal( n.val, n.xmlType );
 
             if ( updated ) {
-                that.validateInput( $input )
+                that.validateInput( input )
                     .then( valid => {
                         // propagate event externally after internal processing is completed
                         $input.trigger( 'valuechange', valid );
@@ -791,12 +791,12 @@ Form.prototype.validateContent = function( $container ) {
 
     const validations = $container.find( '.question' ).addBack( '.question' ).map( function() {
         // only trigger validate on first input and use a **pure CSS** selector (huge performance impact)
-        const $elem = $( this )
-            .find( 'input:not(.ignore):not(:disabled), select:not(.ignore):not(:disabled), textarea:not(.ignore):not(:disabled)' );
-        if ( $elem.length === 0 ) {
+        const elem = this
+            .querySelector( 'input:not(.ignore):not(:disabled), select:not(.ignore):not(:disabled), textarea:not(.ignore):not(:disabled)' );
+        if ( !elem ) {
             return Promise.resolve();
         }
-        return that.validateInput( $elem.eq( 0 ) );
+        return that.validateInput( elem );
     } ).toArray();
 
     return Promise.all( validations )
@@ -832,11 +832,10 @@ Form.prototype.pathToAbsolute = function( targetPath, contextPath ) {
 /**
  * Validates question values.
  * 
- * @param  {jQuery} $input    [description]
+ * @param  {Element} control    [description]
  * @return {Promise}           [description]
  */
-Form.prototype.validateInput = function( $input ) {
-    const input = $input[ 0 ];
+Form.prototype.validateInput = function( control ) {
     if ( !this.initialized ) {
         return Promise.resolve();
     }
@@ -846,15 +845,15 @@ Form.prototype.validateInput = function( $input ) {
     // There is some scope for performance improvement by determining other properties when they 
     // are needed, but that may not be so significant.
     const n = {
-        path: this.input.getName( input ),
-        inputType: this.input.getInputType( input ),
-        xmlType: this.input.getXmlType( input ),
-        enabled: this.input.isEnabled( input ),
-        constraint: this.input.getConstraint( input ),
-        calculation: this.input.getCalculation( input ),
-        required: this.input.getRequired( input ),
-        readonly: this.input.getReadonly( input ),
-        val: this.input.getVal( input )
+        path: this.input.getName( control ),
+        inputType: this.input.getInputType( control ),
+        xmlType: this.input.getXmlType( control ),
+        enabled: this.input.isEnabled( control ),
+        constraint: this.input.getConstraint( control ),
+        calculation: this.input.getCalculation( control ),
+        required: this.input.getRequired( control ),
+        readonly: this.input.getReadonly( control ),
+        val: this.input.getVal( control )
     };
     // No need to validate, **nor send validation events**. Meant for simple empty "notes" only.
     if ( n.readonly && !n.val && !n.required && !n.constraint && !n.calculation ) {
@@ -865,7 +864,7 @@ Form.prototype.validateInput = function( $input ) {
     // If an element is disabled mark it as valid (to undo a previously shown branch with fields marked as invalid).
     if ( n.enabled && n.inputType !== 'hidden' ) {
         // Only now, will we determine the index.
-        n.ind = this.input.getIndex( input );
+        n.ind = this.input.getIndex( control );
         getValidationResult = this.model.node( n.path, n.ind ).validate( n.constraint, n.required, n.xmlType );
     } else {
         getValidationResult = Promise.resolve( {
@@ -882,30 +881,30 @@ Form.prototype.validateInput = function( $input ) {
             if ( n.inputType !== 'hidden' ) {
 
                 // Check current UI state
-                n.q = that.input.getWrapNode( input );
+                n.q = that.input.getWrapNode( control );
                 previouslyInvalid = n.q.classList.contains( 'invalid-required' ) || n.q.classList.contains( 'invalid-constraint' );
 
                 // Update UI
                 if ( result.requiredValid === false ) {
-                    that.setValid( input, 'constraint' );
-                    that.setInvalid( input, 'required' );
+                    that.setValid( control, 'constraint' );
+                    that.setInvalid( control, 'required' );
                 } else if ( result.constraintValid === false ) {
-                    that.setValid( input, 'required' );
-                    that.setInvalid( input, 'constraint' );
+                    that.setValid( control, 'required' );
+                    that.setInvalid( control, 'constraint' );
                 } else {
-                    that.setValid( input, 'constraint' );
-                    that.setValid( input, 'required' );
+                    that.setValid( control, 'constraint' );
+                    that.setValid( control, 'required' );
                 }
             }
             // Send invalidated event
             if ( !passed && !previouslyInvalid ) {
-                input.dispatchEvent( events.Invalidated() );
+                control.dispatchEvent( events.Invalidated() );
             }
             return passed;
         } )
         .catch( e => {
             console.error( 'validation error', e );
-            that.setInvalid( input, 'constraint' );
+            that.setInvalid( control, 'constraint' );
             throw e;
         } );
 };
