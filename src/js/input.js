@@ -4,6 +4,7 @@
 
 import types from './types';
 import events from './event';
+import { closestAncestorUntil } from './dom-utils';
 import $ from 'jquery';
 
 export default {
@@ -21,37 +22,30 @@ export default {
         return result;
     },
     /** very inefficient, should actually not be used **/
-    getProps( $input ) {
-        if ( $input.length !== 1 ) {
-            return console.error( 'getProps(): no input node provided or multiple' );
-        }
+    getProps( control ) {
         return {
-            path: this.getName( $input ),
-            ind: this.getIndex( $input ),
-            inputType: this.getInputType( $input ),
-            xmlType: this.getXmlType( $input ),
-            constraint: this.getConstraint( $input ),
-            calculation: this.getCalculation( $input ),
-            relevant: this.getRelevant( $input ),
-            readonly: this.getReadonly( $input ),
-            val: this.getVal( $input ),
-            required: this.getRequired( $input ),
-            enabled: this.isEnabled( $input ),
-            multiple: this.isMultiple( $input )
+            path: this.getName( control ),
+            ind: this.getIndex( control ),
+            inputType: this.getInputType( control ),
+            xmlType: this.getXmlType( control ),
+            constraint: this.getConstraint( control ),
+            calculation: this.getCalculation( control ),
+            relevant: this.getRelevant( control ),
+            readonly: this.getReadonly( control ),
+            val: this.getVal( $( control ) ),
+            required: this.getRequired( control ),
+            enabled: this.isEnabled( control ),
+            multiple: this.isMultiple( control )
         };
     },
-    getInputType( $input ) {
-        let nodeName;
-        if ( $input.length !== 1 ) {
-            return ''; //console.error('getInputType(): no input node provided or multiple');
-        }
-        nodeName = $input.prop( 'nodeName' ).toLowerCase();
+    getInputType( control ) {
+        const nodeName = control.nodeName.toLowerCase();
         if ( nodeName === 'input' ) {
-            if ( $input.data( 'drawing' ) ) {
+            if ( control.dataset.drawing ) {
                 return 'drawing';
             }
-            if ( $input.attr( 'type' ).length > 0 ) {
-                return $input.attr( 'type' ).toLowerCase();
+            if ( control.type ) {
+                return control.type.toLowerCase();
             }
             return console.error( '<input> node has no type' );
 
@@ -65,56 +59,50 @@ export default {
             return console.error( 'unexpected input node type provided' );
         }
     },
-    getConstraint( $input ) {
-        return $input.attr( 'data-constraint' );
+    getConstraint( control ) {
+        return control.dataset.constraint;
     },
-    getRequired( $input ) {
+    getRequired( control ) {
         // only return value if input is not a table heading input
-        if ( $input.parentsUntil( '.or', '.or-appearance-label' ).length === 0 ) {
-            return $input.attr( 'data-required' );
+        if ( !closestAncestorUntil( control, '.or-appearance-label', '.or' ) ) {
+            return control.dataset.required;
         }
     },
-    getRelevant( $input ) {
-        return $input.attr( 'data-relevant' );
+    getRelevant( control ) {
+        return control.dataset.relevant;
     },
-    getReadonly( $input ) {
-        return $input.is( '[readonly]' );
+    getReadonly( control ) {
+        return control.matches( '[readonly]' );
     },
-    getCalculation( $input ) {
-        return $input.attr( 'data-calculate' );
+    getCalculation( control ) {
+        return control.dataset.calculate;
     },
-    getXmlType( $input ) {
-        if ( $input.length !== 1 ) {
-            return console.error( 'getXMLType(): no input node provided or multiple' );
+    getXmlType( control ) {
+        return control.dataset.typeXml;
+    },
+    getName( control ) {
+        const name = control.dataset.name || control.getAttribute( 'name' );
+        if ( !name ) {
+            console.error( 'input node has no name' );
         }
-        return $input.attr( 'data-type-xml' );
-    },
-    getName( $input ) {
-        let name;
-        if ( $input.length !== 1 ) {
-            return console.error( 'getName(): no input node provided or multiple' );
-        }
-        name = $input.attr( 'data-name' ) || $input.attr( 'name' );
-        return name || console.error( 'input node has no name' );
+        return name;
     },
     /**
      * Used to retrieve the index of a question amidst all questions with the same name.
      * The index that can be used to find the corresponding node in the model.
      * NOTE: this function should be used sparingly, as it is CPU intensive!
      */
-    getIndex( $input ) {
-        if ( $input.length !== 1 ) {
-            return console.error( 'getIndex(): no input node provided or multiple' );
-        }
-        return this.form.repeats.getIndex( $input[ 0 ].closest( '.or-repeat' ) );
+    getIndex( control ) {
+        return this.form.repeats.getIndex( control.closest( '.or-repeat' ) );
     },
-    isMultiple( $input ) {
-        return ( this.getInputType( $input ) === 'checkbox' || $input.attr( 'multiple' ) !== undefined ) ? true : false;
+    isMultiple( control ) {
+        return this.getInputType( control ) === 'checkbox' || control.multiple;
     },
-    isEnabled( $input ) {
-        return !( $input.prop( 'disabled' ) || $input.parentsUntil( '.or', '.disabled' ).length > 0 );
+    isEnabled( control ) {
+        return !( control.disabled || closestAncestorUntil( control, '.disabled', '.or' ) );
     },
     getVal( $input ) {
+        const input = $input[ 0 ];
         let inputType;
         const values = [];
         let name;
@@ -122,16 +110,16 @@ export default {
         if ( $input.length !== 1 ) {
             return console.error( 'getVal(): no inputNode provided or multiple' );
         }
-        inputType = this.getInputType( $input );
-        name = this.getName( $input );
+        inputType = this.getInputType( input );
+        name = this.getName( input );
 
         if ( inputType === 'radio' ) {
-            const checked = this.getWrapNode( $input[ 0 ] ).querySelector( `input[type="radio"][data-name="${name}"]:checked` );
+            const checked = this.getWrapNode( input ).querySelector( `input[type="radio"][data-name="${name}"]:checked` );
             return checked ? checked.value : '';
         }
 
         if ( inputType === 'checkbox' ) {
-            this.getWrapNode( $input[ 0 ] ).querySelectorAll( `input[type="checkbox"][name="${name}"]:checked` ).forEach( input => values.push( input.value ) );
+            this.getWrapNode( input ).querySelectorAll( `input[type="checkbox"][name="${name}"]:checked` ).forEach( input => values.push( input.value ) );
             return values;
         }
         return $input.val() || '';
@@ -148,9 +136,9 @@ export default {
     setVal( $input, value, event = events.InputUpdate() ) {
         let inputs;
         const input = $input[ 0 ];
-        const type = this.getInputType( $input );
+        const type = this.getInputType( input );
         const question = this.getWrapNode( input );
-        const name = this.getName( $input );
+        const name = this.getName( input );
 
         if ( type === 'radio' ) {
             // data-name is always present on radiobuttons
@@ -197,7 +185,7 @@ export default {
             }
         }
 
-        if ( this.isMultiple( $input ) === true ) {
+        if ( this.isMultiple( input ) === true ) {
             // TODO: It's weird that setVal does not take an array value but getVal returns an array value for multiple selects!
             value = value.split( ' ' );
         } else if ( type === 'radio' ) {

@@ -370,8 +370,9 @@ Form.prototype.setAllVals = function( $group, groupIndex ) {
 };
 
 Form.prototype.getModelValue = function( $control ) {
-    const path = this.input.getName( $control );
-    const index = this.input.getIndex( $control );
+    const control = $control[ 0 ];
+    const path = this.input.getName( control );
+    const index = this.input.getIndex( control );
     return this.model.node( path, index ).getVal();
 };
 
@@ -511,9 +512,10 @@ Form.prototype.getDataStrWithoutIrrelevantNodes = function() {
     // the indices are still correct!
     this.getRelatedNodes( 'data-relevant' ).reverse().each( function() {
         const $node = $( this );
-        const relevant = that.input.getRelevant( $node );
-        const index = that.input.getIndex( $node );
-        const path = that.input.getName( $node );
+        const node = this;
+        const relevant = that.input.getRelevant( node );
+        const index = that.input.getIndex( node );
+        const path = that.input.getName( node );
         let context;
 
         /* 
@@ -621,22 +623,23 @@ Form.prototype.setEventHandlers = function() {
         'input:not(.ignore), select:not(.ignore), textarea:not(.ignore)',
         function() {
             const $input = $( this );
+            const input = this;
             const n = {
-                path: that.input.getName( $input ),
-                inputType: that.input.getInputType( $input ),
-                xmlType: that.input.getXmlType( $input ),
+                path: that.input.getName( input ),
+                inputType: that.input.getInputType( input ),
+                xmlType: that.input.getXmlType( input ),
                 val: that.input.getVal( $input ),
-                index: that.input.getIndex( $input )
+                index: that.input.getIndex( input )
             };
 
             // set file input values to the uniqified actual name of file (without c://fakepath or anything like that)
-            if ( n.val.length > 0 && n.inputType === 'file' && $input[ 0 ].files[ 0 ] && $input[ 0 ].files[ 0 ].size > 0 ) {
-                n.val = getFilename( $input[ 0 ].files[ 0 ], $input[ 0 ].dataset.filenamePostfix );
+            if ( n.val.length > 0 && n.inputType === 'file' && input.files[ 0 ] && input.files[ 0 ].size > 0 ) {
+                n.val = getFilename( input.files[ 0 ], input.dataset.filenamePostfix );
             }
             if ( n.val.length > 0 && n.inputType === 'drawing' ) {
                 n.val = getFilename( {
                     name: n.val
-                }, $input[ 0 ].dataset.filenamePostfix );
+                }, input.dataset.filenamePostfix );
             }
 
             const updated = that.model.node( n.path, n.index ).setVal( n.val, n.xmlType );
@@ -843,14 +846,14 @@ Form.prototype.validateInput = function( $input ) {
     // There is some scope for performance improvement by determining other properties when they 
     // are needed, but that may not be so significant.
     const n = {
-        path: this.input.getName( $input ),
-        inputType: this.input.getInputType( $input ),
-        xmlType: this.input.getXmlType( $input ),
-        enabled: this.input.isEnabled( $input ),
-        constraint: this.input.getConstraint( $input ),
-        calculation: this.input.getCalculation( $input ),
-        required: this.input.getRequired( $input ),
-        readonly: this.input.getReadonly( $input ),
+        path: this.input.getName( input ),
+        inputType: this.input.getInputType( input ),
+        xmlType: this.input.getXmlType( input ),
+        enabled: this.input.isEnabled( input ),
+        constraint: this.input.getConstraint( input ),
+        calculation: this.input.getCalculation( input ),
+        required: this.input.getRequired( input ),
+        readonly: this.input.getReadonly( input ),
         val: this.input.getVal( $input )
     };
     // No need to validate, **nor send validation events**. Meant for simple empty "notes" only.
@@ -862,7 +865,7 @@ Form.prototype.validateInput = function( $input ) {
     // If an element is disabled mark it as valid (to undo a previously shown branch with fields marked as invalid).
     if ( n.enabled && n.inputType !== 'hidden' ) {
         // Only now, will we determine the index.
-        n.ind = this.input.getIndex( $input );
+        n.ind = this.input.getIndex( input );
         getValidationResult = this.model.node( n.path, n.ind ).validate( n.constraint, n.required, n.xmlType );
     } else {
         getValidationResult = Promise.resolve( {

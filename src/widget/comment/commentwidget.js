@@ -40,7 +40,7 @@ class Comment extends Widget {
     }
 
     _getLinkedQuestion( input ) {
-        const contextPath = this.options.helpers.input.getName( $( input ) );
+        const contextPath = this.options.helpers.input.getName( input );
         const targetPath = this.element.dataset.for.trim();
         const absoluteTargetPath = this.options.helpers.pathToAbsolute( targetPath, contextPath );
         // The root is nearest repeat or otherwise nearest form. This avoids having to calculate indices, without
