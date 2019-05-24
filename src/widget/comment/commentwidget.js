@@ -49,7 +49,7 @@ class Comment extends Widget {
         const root = input.closest( 'form.or, .or-repeat' );
 
         return this.options.helpers.input
-            .getWrapNodes( $( root.querySelector( `[name="${absoluteTargetPath}"], [data-name="${absoluteTargetPath}"]` ) ) )[ 0 ];
+            .getWrapNode( root.querySelector( `[name="${absoluteTargetPath}"], [data-name="${absoluteTargetPath}"]` ) );
     }
 
     _commentHasError() {

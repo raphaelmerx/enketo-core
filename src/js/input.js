@@ -4,15 +4,21 @@
 
 import types from './types';
 import events from './event';
+import $ from 'jquery';
 
 export default {
     getWrapNode( control ) {
         return control.closest( '.question, .calculation' );
     },
-    // Multiple nodes are limited to ones of the same input type (better implemented as JQuery plugin actually)
-    getWrapNodes( $inputs ) {
-        const type = this.getInputType( $inputs.eq( 0 ) );
-        return ( type === 'fieldset' ) ? $inputs : $inputs.closest( '.question, .calculation' );
+    getWrapNodes( controls ) {
+        const result = [];
+        controls.forEach( control => {
+            const question = this.getWrapNode( control );
+            if ( !result.includes( question ) ) {
+                result.push( question );
+            }
+        } );
+        return result;
     },
     /** very inefficient, should actually not be used **/
     getProps( $input ) {
@@ -132,28 +138,31 @@ export default {
     },
     find( name, index ) {
         let attr = 'name';
-        if ( this.getInputType( this.form.view.$.find( `[data-name="${name}"]:not(.ignore)` ).eq( 0 ) ) === 'radio' ) {
+        if ( this.form.view.html.querySelector( `input[type="radio"][data-name="${name}"]:not(.ignore)` ) ) {
             attr = 'data-name';
         }
-        return this.getWrapNodes( this.form.view.$.find( `[${attr}="${name}"]` ) ).eq( index ).find( `[${attr}="${name}"]:not(.ignore)` ).eq( 0 );
+        const question = this.getWrapNodes( this.form.view.html.querySelectorAll( `[${attr}="${name}"]` ) )[ index ];
+
+        return question ? question.querySelector( `[${attr}="${name}"]:not(.ignore)` ) : null;
     },
     setVal( $input, value, event = events.InputUpdate() ) {
-        let $inputs;
+        let inputs;
+        const input = $input[ 0 ];
         const type = this.getInputType( $input );
-        const $question = this.getWrapNodes( $input );
+        const question = this.getWrapNode( input );
         const name = this.getName( $input );
 
         if ( type === 'radio' ) {
-            // TODO: should this revert to name if data-name is not present. Is data-name always present on radiobuttons?
-            $inputs = $question.find( `[data-name="${name}"]:not(.ignore)` );
+            // data-name is always present on radiobuttons
+            inputs = question.querySelectorAll( `[data-name="${name}"]:not(.ignore)` );
         } else {
             // why not use this.getIndex?
-            $inputs = $question.find( `[name="${name}"]:not(.ignore)` );
+            inputs = question.querySelectorAll( `[name="${name}"]:not(.ignore)` );
 
             if ( type === 'file' ) {
                 // value of file input can be reset to empty but not to a non-empty value
                 if ( value ) {
-                    $input.attr( 'data-loaded-file-name', value );
+                    input.setAttribute( 'data-loaded-file-name', value );
                     // console.error('Cannot set value of file input field (value: '+value+'). If trying to load '+
                     //  'this record for editing this file input field will remain unchanged.');
                     return false;
@@ -197,18 +206,18 @@ export default {
 
         // Trigger an 'inputupdate' event which can be used in widgets to update the widget when the value of its 
         // original input element has changed **programmatically**.
-        if ( $inputs.length ) {
+        if ( inputs.length ) {
             const curVal = this.getVal( $input );
             if ( curVal === undefined || curVal.toString() !== value.toString() ) {
-                $inputs.val( value );
+                $( inputs ).val( value );
                 // don't trigger on all radiobuttons/checkboxes
                 if ( event ) {
-                    $inputs[ 0 ].dispatchEvent( event );
+                    inputs[ 0 ].dispatchEvent( event );
                 }
             }
         }
 
-        return $inputs[ 0 ];
+        return inputs[ 0 ];
     },
     validate( $input ) {
         return this.form.validateInput( $input );

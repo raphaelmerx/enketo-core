@@ -355,9 +355,9 @@ Form.prototype.setAllVals = function( $group, groupIndex ) {
                 var value = element.textContent;
                 var name = that.model.getXPath( element, 'instance' );
                 const index = that.model.node( name ).getElements().indexOf( element );
-                const $control = that.input.find( name, index );
-                if ( $control.length ) {
-                    that.input.setVal( $control, value );
+                const control = that.input.find( name, index );
+                if ( control ) {
+                    that.input.setVal( $( control ), value );
                 }
             } catch ( e ) {
                 console.error( e );
@@ -699,19 +699,19 @@ Form.prototype.setEventHandlers = function() {
     } );
 };
 
-Form.prototype.setValid = function( $node, type ) {
-    const classes = ( type ) ? `invalid-${type}` : 'invalid-constraint invalid-required invalid-relevant';
-    this.input.getWrapNodes( $node ).removeClass( classes );
+Form.prototype.setValid = function( node, type ) {
+    const classes = ( type ) ? [ `invalid-${type}` ] : [ 'invalid-constraint', 'invalid-required', 'invalid-relevant' ];
+    this.input.getWrapNode( node ).classList.remove( ...classes );
 };
 
-Form.prototype.setInvalid = function( $node, type ) {
+Form.prototype.setInvalid = function( node, type ) {
     type = type || 'constraint';
 
-    if ( config.validatePage === false && this.isValid( $node ) ) {
+    if ( config.validatePage === false && this.isValid( node ) ) {
         this.blockPageNavigation();
     }
 
-    this.input.getWrapNodes( $node ).addClass( `invalid-${type}` );
+    this.input.getWrapNode( node ).classList.add( `invalid-${type}` );
 };
 
 /**
@@ -734,13 +734,13 @@ Form.prototype.blockPageNavigation = function() {
  * 
  * @return {!boolean} whether the question/form is not marked as invalid.
  */
-Form.prototype.isValid = function( $node ) {
-    let $question;
-    if ( $node ) {
-        $question = this.input.getWrapNodes( $node );
-        return !$question.hasClass( 'invalid-required' ) && !$question.hasClass( 'invalid-constraint' ) && !$question.hasClass( 'invalid-relevant' );
+Form.prototype.isValid = function( node ) {
+    if ( node ) {
+        const question = this.input.getWrapNode( node );
+        const cls = question.classList;
+        return !cls.contains( 'invalid-required' ) && !cls.contains( 'invalid-constraint' ) && !cls.contains( 'invalid-relevant' );
     }
-    return this.view.$.find( '.invalid-required, .invalid-constraint, .invalid-relevant' ).length === 0;
+    return this.view.html.querySelector( '.invalid-required, .invalid-constraint, .invalid-relevant' ) === null;
 };
 
 Form.prototype.clearIrrelevant = function() {
@@ -783,7 +783,7 @@ Form.prototype.validateContent = function( $container ) {
     //can't fire custom events on disabled elements therefore we set them all as valid
     $container.find( 'fieldset:disabled input, fieldset:disabled select, fieldset:disabled textarea, ' +
         'input:disabled, select:disabled, textarea:disabled' ).each( function() {
-        that.setValid( $( this ) );
+        that.setValid( this );
     } );
 
     const validations = $container.find( '.question' ).addBack( '.question' ).map( function() {
@@ -833,6 +833,7 @@ Form.prototype.pathToAbsolute = function( targetPath, contextPath ) {
  * @return {Promise}           [description]
  */
 Form.prototype.validateInput = function( $input ) {
+    const input = $input[ 0 ];
     if ( !this.initialized ) {
         return Promise.resolve();
     }
@@ -876,31 +877,32 @@ Form.prototype.validateInput = function( $input ) {
             const passed = result.requiredValid !== false && result.constraintValid !== false;
 
             if ( n.inputType !== 'hidden' ) {
+
                 // Check current UI state
-                n.$q = that.input.getWrapNodes( $input );
-                previouslyInvalid = n.$q.hasClass( 'invalid-required' ) || n.$q.hasClass( 'invalid-constraint' );
+                n.q = that.input.getWrapNode( input );
+                previouslyInvalid = n.q.classList.contains( 'invalid-required' ) || n.q.classList.contains( 'invalid-constraint' );
 
                 // Update UI
                 if ( result.requiredValid === false ) {
-                    that.setValid( $input, 'constraint' );
-                    that.setInvalid( $input, 'required' );
+                    that.setValid( input, 'constraint' );
+                    that.setInvalid( input, 'required' );
                 } else if ( result.constraintValid === false ) {
-                    that.setValid( $input, 'required' );
-                    that.setInvalid( $input, 'constraint' );
+                    that.setValid( input, 'required' );
+                    that.setInvalid( input, 'constraint' );
                 } else {
-                    that.setValid( $input, 'constraint' );
-                    that.setValid( $input, 'required' );
+                    that.setValid( input, 'constraint' );
+                    that.setValid( input, 'required' );
                 }
             }
             // Send invalidated event
             if ( !passed && !previouslyInvalid ) {
-                $input[ 0 ].dispatchEvent( events.Invalidated() );
+                input.dispatchEvent( events.Invalidated() );
             }
             return passed;
         } )
         .catch( e => {
             console.error( 'validation error', e );
-            that.setInvalid( $input, 'constraint' );
+            that.setInvalid( input, 'constraint' );
             throw e;
         } );
 };
@@ -945,7 +947,7 @@ Form.prototype.getGoToTarget = function( path ) {
         }
     }
 
-    return target ? this.input.getWrapNodes( $( target ) ).get( 0 ) : target;
+    return target ? this.input.getWrapNode( target ) : target;
 };
 
 /**
