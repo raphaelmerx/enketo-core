@@ -168,6 +168,7 @@ class Geopicker extends Widget {
                     } )
                     .catch( () => {} );
             }
+            that.$detect.removeClass('location-detected');
         } );
 
         // handle fullscreen map button click
@@ -492,6 +493,8 @@ class Geopicker extends Widget {
                     lat: Math.round( position.coords.latitude * 1000000 ) / 1000000,
                     lng: Math.round( position.coords.longitude * 1000000 ) / 1000000
                 };
+
+                that.$detect.addClass('location-detected');
 
                 if ( that.polyline && that.props.type === 'geoshape' && that.updatedPolylineWouldIntersect( latLng, that.currentIndex ) ) {
                     that._showIntersectError();
